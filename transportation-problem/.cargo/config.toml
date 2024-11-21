@@ -1,0 +1,5 @@
+[alias]
+test-debug      = "test -- --nocapture --test-threads=1"
+test-check      = "test --release check -- --nocapture --test-threads=1"
+test-perf       = "test --release perf  -- -Zunstable-options --report-time"
+test-artifact   = "test --release artifact"
