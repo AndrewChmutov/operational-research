@@ -151,6 +151,7 @@ mod perf {
     #[case(50)]
     #[case(100)]
     #[case(200)]
+    #[case(500)]
     fn generated(#[case] n: usize) {
         solve_generated(n, false);
     }
