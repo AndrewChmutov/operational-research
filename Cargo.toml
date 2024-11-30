@@ -1,4 +1,12 @@
 [workspace]
+resolver = "2"
 members = [
     "transportation-problem",
 ]
+
+[profile.release]
+lto = true
+codegen-units = 1
+
+[profile.test]
+inherits = "release"
