@@ -173,13 +173,11 @@ mod artifact {
             })
             .collect::<Vec<_>>();
 
-        let mut child = Command::new(".venv/bin/python3")
+        Command::new(".venv/bin/python3")
             .stdin(Stdio::piped())
             .args(["scripts/plot.py"])
             .spawn()
-            .expect("Failed to start a subprocess");
-
-        child
+            .expect("Failed to start a subprocess")
             .stdin
             .as_mut()
             .expect("Failed to pass data to the plotting script")
