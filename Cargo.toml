@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "transportation-problem",
+    "minimum-spanning-tree",
 ]
 
 [profile.release]
