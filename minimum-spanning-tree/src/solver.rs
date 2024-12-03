@@ -18,12 +18,11 @@ pub fn solve<D: Distance>(cities: &[City]) -> (Vec<(usize, usize)>, Vec<Vec<f32>
         }
     });
 
-    let mut in_spanning_tree_n = 0;
     let mut in_spanning_tree = bit_set::BitSet::with_capacity(cities.len());
     let mut cheapest_connection = vec![f32::MAX; cities.len()];
     cheapest_connection[536] = 0.0; // City `Hel`
-    let mut cheapest_neighbour_node: Vec<Option<usize>> = vec![None; cities.len()];
-    while in_spanning_tree_n != cities.len() {
+    let mut cheapest_connected_to: Vec<Option<usize>> = vec![None; cities.len()];
+    for _ in 0..cities.len() {
         // Get argmin
         let v = cheapest_connection
             .iter()
@@ -34,17 +33,16 @@ pub fn solve<D: Distance>(cities: &[City]) -> (Vec<(usize, usize)>, Vec<Vec<f32>
             .0;
 
         in_spanning_tree.insert(v);
-        in_spanning_tree_n += 1;
 
         for w in 0..cities.len() {
             if !in_spanning_tree.contains(w) && distances[v][w] < cheapest_connection[w] {
                 cheapest_connection[w] = distances[v][w];
-                cheapest_neighbour_node[w] = Some(v);
+                cheapest_connected_to[w] = Some(v);
             }
         }
     }
 
-    let edges = cheapest_neighbour_node
+    let edges = cheapest_connected_to
         .iter()
         .enumerate()
         .filter(|x| x.1.is_some())
