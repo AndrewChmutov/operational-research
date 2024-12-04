@@ -10,6 +10,34 @@ pub struct ProblemIR {
     pub objective_coefficients: Vec<f64>,
     pub resources: Vec<f64>,
     pub is_integer: Vec<bool>,
+    pub n: usize,
+    pub constraints_per_variable: Vec<u32>,
+}
+
+impl ProblemIR {
+    pub fn new(
+        coefficients: Vec<Vec<f64>>,
+        objective_coefficients: Vec<f64>,
+        resources: Vec<f64>,
+        is_integer: Vec<bool>,
+    ) -> Self {
+        let n = is_integer.len();
+        let mut constraints_per_variable = vec![0; n];
+        for constraint in coefficients.iter() {
+            for (n_var, var_constr) in constraint.iter().enumerate() {
+                constraints_per_variable[n_var] += !is_zero(*var_constr) as u32;
+            }
+        }
+        println!("Constraints per var {constraints_per_variable:?}");
+        Self {
+            coefficients,
+            objective_coefficients,
+            resources,
+            is_integer,
+            n,
+            constraints_per_variable,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -53,6 +81,14 @@ impl Bounds {
             .iter()
             .zip(self.ub.iter())
             .map(|(lb, ub)| variable().min(*lb).max(*ub))
+    }
+
+    pub fn lengths(&self) -> impl Iterator<Item = f64> + '_ {
+        self.lb.iter().zip(self.ub.iter()).map(|(lb, ub)| ub - lb)
+    }
+
+    pub fn total_length(&self) -> f64 {
+        self.lengths().sum::<_>()
     }
 }
 

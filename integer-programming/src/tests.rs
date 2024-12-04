@@ -16,12 +16,7 @@ fn lecture_sample() -> (ProblemIR, Bounds) {
 
     let is_integer = vec![true, true, false, false];
 
-    let problem = ProblemIR {
-        coefficients,
-        objective_coefficients,
-        resources,
-        is_integer,
-    };
+    let problem = ProblemIR::new(coefficients, objective_coefficients, resources, is_integer);
     let bounds = Bounds { lb, ub };
 
     (problem, bounds)
@@ -56,12 +51,7 @@ fn lab_sample(relaxed: bool) -> (ProblemIR, Bounds) {
         .chain(vec![false; 5].into_iter())
         .collect::<Vec<_>>();
 
-    let problem = ProblemIR {
-        coefficients,
-        objective_coefficients,
-        resources,
-        is_integer,
-    };
+    let problem = ProblemIR::new(coefficients, objective_coefficients, resources, is_integer);
     let bounds = Bounds { lb, ub };
 
     (problem, bounds)
@@ -87,5 +77,28 @@ mod check {
         println!("Answer: {}", solution);
         println!("Iterations: {}", iterations);
         assert!((solution - 207.0).abs() <= f64::EPSILON);
+        assert!(iterations < 20, "Optimization is not enough");
+    }
+}
+
+#[cfg(test)]
+mod perf {
+    use super::*;
+
+    #[test]
+    fn solve_lecture() {
+        let (problem, bounds) = lecture_sample();
+        let (solution, iterations) = solver::solve(&problem, bounds);
+        println!("Answer: {}", solution);
+        println!("Iterations: {}", iterations);
+        assert!((solution - 22.5).abs() <= f64::EPSILON);
+    }
+
+    #[test]
+    fn solve_lab() {
+        let (problem, bounds) = lab_sample(false);
+        let (solution, iterations) = solver::solve(&problem, bounds);
+        assert!((solution - 207.0).abs() <= f64::EPSILON);
+        assert!(iterations < 20, "Optimization is not enough");
     }
 }

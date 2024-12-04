@@ -35,22 +35,35 @@ fn solve_rec(problem: &ProblemIR, bounds: Bounds, lower: &mut f64, iterations: &
         return;
     }
 
-    let n = values.len();
-
     // Integer variables with real values
-    let integer_but_real = (0..n).position(|i| {
-        problem.is_integer[i] && is_float(values[i]) && !is_zero(bounds.lb[i] - bounds.ub[i])
-    });
+    let integer_but_real = problem
+        .constraints_per_variable
+        .iter()
+        .zip(bounds.lengths())
+        .map(|(n_constr, n_possible)| 1.0 * *n_constr as f64 + 0.0 * n_possible)
+        .enumerate()
+        .filter(|(i, _)| {
+            problem.is_integer[*i]
+                && is_float(values[*i])
+                && !is_zero(bounds.lb[*i] - bounds.ub[*i])
+        })
+        .max_by(|(_, a), (_, b)| a.total_cmp(b))
+        .map(|x| x.0);
 
     println!("Integer to deal with {integer_but_real:?}");
 
     if let Some(i) = integer_but_real {
         let (left_bounds, right_bounds) = bounds.split(i, values[i]);
-        if let Some(left_bounds) = left_bounds {
-            solve_rec(problem, left_bounds, lower, iterations);
-        }
-        if let Some(right_bounds) = right_bounds {
-            solve_rec(problem, right_bounds, lower, iterations);
+        #[allow(unused_mut)]
+        let mut bounds = [left_bounds, right_bounds];
+        //bounds.sort_by(|a, b| {
+        //    b.as_ref()
+        //        .map_or(0.0, |x| x.total_length())
+        //        .total_cmp(&a.as_ref().map_or(0.0, |x| x.total_length()))
+        //});
+        for bound in bounds.into_iter().flatten() {
+            println!("{iterations} kek {}", bound.total_length());
+            solve_rec(problem, bound, lower, iterations);
         }
     }
 }
