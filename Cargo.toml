@@ -3,11 +3,12 @@ resolver = "2"
 members = [
     "transportation-problem",
     "minimum-spanning-tree",
+    "integer-programming",
 ]
 
 [profile.release]
 lto = true
 codegen-units = 1
 
-[profile.test]
-inherits = "release"
+# [profile.test]
+# inherits = "release"
