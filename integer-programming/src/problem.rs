@@ -28,7 +28,6 @@ impl ProblemIR {
                 constraints_per_variable[n_var] += !is_zero(*var_constr) as u32;
             }
         }
-        println!("Constraints per var {constraints_per_variable:?}");
         Self {
             coefficients,
             objective_coefficients,
@@ -55,8 +54,6 @@ impl Bounds {
         debug_assert!(!is_zero(value));
         let new_left_ub = value.floor();
         let new_right_lb = value.ceil();
-        dbg!(&new_left_ub);
-        dbg!(&new_right_lb);
 
         let left = if self.lb[i] <= new_left_ub {
             let mut bounds = self.clone();
@@ -73,7 +70,7 @@ impl Bounds {
             None
         };
 
-        dbg!((left, right))
+        (left, right)
     }
 
     pub fn variables(&self) -> impl Iterator<Item = VariableDefinition> + '_ {
@@ -132,19 +129,15 @@ impl ProblemIR {
             .zip(self.resources.iter())
             .map(|(expression, resource)| constraint!(expression <= *resource))
         {
-            dbg!(&constr);
             model = model.with(constr);
         }
 
         model.solve().ok().map(|x| {
             let objective_value = x.model().obj_value();
-            println!("Variables {:?}", variables);
-            println!("Bounds {:?}", variables);
             let variable_values = variables
                 .into_iter()
                 .map(|v| x.value(v))
                 .collect::<Vec<_>>();
-            println!("Values {:?}", variable_values);
             (objective_value, variable_values)
         })
     }

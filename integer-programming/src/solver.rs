@@ -10,7 +10,6 @@ fn is_milp_solution(values: &[f64], integer: &[bool]) -> bool {
 
 fn solve_rec(problem: &ProblemIR, bounds: Bounds, lower: &mut f64, iterations: &mut u32) {
     *iterations += 1;
-    println!("Try");
     // Solve relaxed problem
     let (solution, values) = match problem.with_bounds(&bounds) {
         // Unfeasible
@@ -31,7 +30,6 @@ fn solve_rec(problem: &ProblemIR, bounds: Bounds, lower: &mut f64, iterations: &
     // if so => update the lower bound
     else if is_milp_solution(&values, &problem.is_integer) {
         *lower = solution;
-        println!("updating the solution with {solution}");
         return;
     }
 
@@ -50,8 +48,6 @@ fn solve_rec(problem: &ProblemIR, bounds: Bounds, lower: &mut f64, iterations: &
         .max_by(|(_, a), (_, b)| a.total_cmp(b))
         .map(|x| x.0);
 
-    println!("Integer to deal with {integer_but_real:?}");
-
     if let Some(i) = integer_but_real {
         let (left_bounds, right_bounds) = bounds.split(i, values[i]);
         #[allow(unused_mut)]
@@ -62,7 +58,6 @@ fn solve_rec(problem: &ProblemIR, bounds: Bounds, lower: &mut f64, iterations: &
         //        .total_cmp(&a.as_ref().map_or(0.0, |x| x.total_length()))
         //});
         for bound in bounds.into_iter().flatten() {
-            println!("{iterations} kek {}", bound.total_length());
             solve_rec(problem, bound, lower, iterations);
         }
     }

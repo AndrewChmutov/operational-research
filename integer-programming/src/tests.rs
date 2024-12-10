@@ -66,7 +66,7 @@ mod check {
         let (problem, bounds) = lecture_sample();
         let (solution, iterations) = solver::solve(&problem, bounds);
         println!("Answer: {}", solution);
-        println!("Iterations: {}", iterations);
+        println!("Solver calls: {}", iterations);
         assert!((solution - 22.5).abs() <= f64::EPSILON);
     }
 
@@ -75,7 +75,7 @@ mod check {
         let (problem, bounds) = lab_sample(false);
         let (solution, iterations) = solver::solve(&problem, bounds);
         println!("Answer: {}", solution);
-        println!("Iterations: {}", iterations);
+        println!("Solver calls: {}", iterations);
         assert!((solution - 207.0).abs() <= f64::EPSILON);
         assert!(iterations < 20, "Optimization is not enough");
     }
@@ -90,7 +90,7 @@ mod perf {
         let (problem, bounds) = lecture_sample();
         let (solution, iterations) = solver::solve(&problem, bounds);
         println!("Answer: {}", solution);
-        println!("Iterations: {}", iterations);
+        println!("Solver calls: {}", iterations);
         assert!((solution - 22.5).abs() <= f64::EPSILON);
     }
 
