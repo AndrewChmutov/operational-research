@@ -1,7 +1,17 @@
-use crate::problem::{Bounds, ProblemIR};
-use crate::solver;
+use std::collections::HashMap;
 
-fn lecture_sample() -> (ProblemIR, Bounds) {
+use crate::problem::{Bounds, ProblemIR};
+use crate::solver::node::{ByInterval, NoSort, NodeSearch, DFS};
+use crate::solver::variable::{ByConstraints, ByLength, ByValue, NoSearch, VariableSearch};
+
+struct Sample {
+    problem: ProblemIR,
+    bounds: Bounds,
+    optimum: Option<f64>,
+    max_solver_calls: Option<u32>,
+}
+
+fn lecture_sample() -> Sample {
     let coefficients: Vec<Vec<f64>> = vec![
         vec![4.0, 3.0, 4.0, 2.0],
         vec![0.0, 0.0, 1.0, 1.5],
@@ -19,10 +29,15 @@ fn lecture_sample() -> (ProblemIR, Bounds) {
     let problem = ProblemIR::new(coefficients, objective_coefficients, resources, is_integer);
     let bounds = Bounds { lb, ub };
 
-    (problem, bounds)
+    Sample {
+        problem,
+        bounds,
+        optimum: Some(22.5),
+        max_solver_calls: None,
+    }
 }
 
-fn lab_sample(relaxed: bool) -> (ProblemIR, Bounds) {
+fn lab_sample(relaxed: bool, check: bool) -> Sample {
     let coefficients: Vec<Vec<f64>> = vec![
         vec![0.0, 3.0, 2.0, 0.0, 0.0, 0.0, -3.0, -1.0, 0.0, 0.0],
         vec![1.0, 1.0, 0.0, 2.0, 0.0, 0.0, 0.0, -1.0, 2.0, 1.0],
@@ -53,31 +68,139 @@ fn lab_sample(relaxed: bool) -> (ProblemIR, Bounds) {
 
     let problem = ProblemIR::new(coefficients, objective_coefficients, resources, is_integer);
     let bounds = Bounds { lb, ub };
+    let optimum = if check { Some(207.0) } else { None };
+    let max_solver_calls = if check { Some(20) } else { None };
 
-    (problem, bounds)
+    Sample {
+        problem,
+        bounds,
+        optimum,
+        max_solver_calls,
+    }
+}
+
+fn solve<N, V>(sample: Sample) -> (f64, u32)
+where
+    N: NodeSearch,
+    V: VariableSearch,
+{
+    let (solution, iterations) = N::solve::<V>(&sample.problem, sample.bounds);
+    println!("Answer: {}", solution);
+    println!("Solver calls: {}", iterations);
+    if let Some(optimum) = sample.optimum {
+        assert!((solution - optimum).abs() <= f64::EPSILON);
+    }
+    if let Some(max_solver_calls) = sample.max_solver_calls {
+        assert!(iterations < max_solver_calls, "Optimization is not enough");
+    }
+    (solution, iterations)
+}
+
+fn solve_lecture_classic() -> (f64, u32) {
+    let sample = lecture_sample();
+    solve::<DFS<NoSort>, ByConstraints>(sample)
+}
+
+fn solve_lab_parametrized<N: NodeSearch, V: VariableSearch>(check: bool) -> (f64, u32) {
+    let sample = lab_sample(false, check);
+    solve::<N, V>(sample)
+}
+
+fn solve_lab_default() -> (f64, u32) {
+    solve_lab_parametrized::<DFS<NoSort>, ByLength>(false)
+}
+
+macro_rules! run_combinations_impl {
+    // No first array left => exit
+    ($algo:ident $out:tt [] $b:tt $init_b:tt) => {
+        $out
+    };
+
+    // First array is not drained => copy the second array and continue matching
+    (
+        $algo:ident
+        $out:tt [$a:ty, $($at:tt)*]
+        []
+        $init_b:tt
+    ) => {
+        run_combinations_impl!($algo $out [$($at)*] $init_b $init_b)
+    };
+
+    (
+        $algo:ident
+        [$($out:tt)*]
+        [$a:ty, $($at:tt)*]
+        [$b:ty, $($bt:tt)*]
+        $init_b:tt
+    ) => {
+        run_combinations_impl!(
+            $algo
+            [$($out)* ((stringify!($a), stringify!($b)), $algo::<$a, $b>(false)),]
+            [$a, $($at)*]
+            [$($bt)*]
+            $init_b
+        )
+    };
+}
+
+macro_rules! run_combinations {
+    ($algo:ident, [$($a:tt)*], [$($b:tt)*]) => {
+        run_combinations_impl!($algo [] [$($a)*,] [$($b)*,] [$($b)*,])
+    };
+}
+
+fn matrix() {
+    // Compute
+    let cross = run_combinations!(
+        solve_lab_parametrized,
+        [DFS<NoSort>, DFS<ByInterval>],
+        [NoSearch, ByConstraints, ByLength, ByValue]
+    );
+
+    // To HashMap
+    let result = cross
+        .into_iter()
+        .fold(HashMap::new(), |mut acc, ((k1, k2), v)| {
+            acc.entry(k1).or_insert_with(HashMap::new).insert(k2, v);
+            acc
+        });
+
+    // Print
+    print!(" {:<16} |", "");
+    for node_search in result.keys() {
+        print!(" {:<16} |", node_search)
+    }
+    println!();
+
+    let var_search = result.values().next().unwrap().keys().collect::<Vec<_>>();
+    for var_s in var_search {
+        print!(" {:<16} |", var_s);
+        for node_search in result.keys() {
+            let (val, calls) = result[node_search][var_s];
+            print!(" {:<16} |", format!("{val} / {calls}"))
+        }
+        println!();
+    }
 }
 
 #[cfg(test)]
 mod check {
+
     use super::*;
 
     #[test]
     fn solve_lecture() {
-        let (problem, bounds) = lecture_sample();
-        let (solution, iterations) = solver::solve(&problem, bounds);
-        println!("Answer: {}", solution);
-        println!("Solver calls: {}", iterations);
-        assert!((solution - 22.5).abs() <= f64::EPSILON);
+        solve_lecture_classic();
     }
 
     #[test]
     fn solve_lab() {
-        let (problem, bounds) = lab_sample(false);
-        let (solution, iterations) = solver::solve(&problem, bounds);
-        println!("Answer: {}", solution);
-        println!("Solver calls: {}", iterations);
-        assert!((solution - 207.0).abs() <= f64::EPSILON);
-        assert!(iterations < 20, "Optimization is not enough");
+        solve_lab_default();
+    }
+
+    #[test]
+    fn solve_matrix() {
+        matrix();
     }
 }
 
@@ -87,18 +210,16 @@ mod perf {
 
     #[test]
     fn solve_lecture() {
-        let (problem, bounds) = lecture_sample();
-        let (solution, iterations) = solver::solve(&problem, bounds);
-        println!("Answer: {}", solution);
-        println!("Solver calls: {}", iterations);
-        assert!((solution - 22.5).abs() <= f64::EPSILON);
+        solve_lecture_classic();
     }
 
     #[test]
     fn solve_lab() {
-        let (problem, bounds) = lab_sample(false);
-        let (solution, iterations) = solver::solve(&problem, bounds);
-        assert!((solution - 207.0).abs() <= f64::EPSILON);
-        assert!(iterations < 20, "Optimization is not enough");
+        solve_lab_default();
+    }
+
+    #[test]
+    fn solve_matrix() {
+        matrix();
     }
 }

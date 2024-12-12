@@ -1,9 +1,6 @@
 use crate::utils::is_zero;
 
-use good_lp::{
-    constraint, default_solver, variable, ProblemVariables, Solution, SolverModel, Variable,
-    VariableDefinition,
-};
+use good_lp::*;
 
 pub struct ProblemIR {
     pub coefficients: Vec<Vec<f64>>,
@@ -112,7 +109,7 @@ impl ProblemIR {
         let mut model = problem_variables.maximise(objective).using(default_solver);
 
         // Disable model output
-        model.set_parameter("loglevel", "0");
+        model.set_parameter("log", "0");
 
         // Add constraints
         for constr in self
