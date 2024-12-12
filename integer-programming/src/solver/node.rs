@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::marker::PhantomData;
 
 use crate::problem::{Bounds, ProblemIR};
@@ -91,6 +92,55 @@ impl<T: NodeSort> NodeSearch for DFS<T> {
 
         // Solve recursively
         Self::solve_rec::<V>(problem, bounds, &mut lower, &mut solver_calls);
+        (lower, solver_calls)
+    }
+}
+
+pub struct BFS;
+impl NodeSearch for BFS {
+    fn solve<V: VariableSearch>(problem: &ProblemIR, bounds: Bounds) -> (f64, u32) {
+        let mut lower = 0f64;
+        let mut solver_calls = 0u32;
+        let mut queue = VecDeque::new();
+        queue.push_back(bounds);
+
+        while !queue.is_empty() {
+            let bounds = queue.pop_front().unwrap();
+            solver_calls += 1;
+
+            // Solve relaxed problem
+            let (solution, values) = match problem.with_bounds(&bounds) {
+                // Unfeasible
+                None => continue,
+
+                // Feasible
+                Some((solution, values)) => (solution, values),
+            };
+
+            // Maximization problem
+            // And relaxed problem is already worse,
+            // than encountered non-relaxed one
+            if solution <= lower {
+                continue;
+            }
+            // Check whether solution is of MILP
+            // if so => update the lower bound
+            else if is_milp_solution(&values, &problem.is_integer) {
+                lower = solution;
+                continue;
+            }
+
+            // Integer variables with real values
+            let integer_but_real = V::pick(problem, &values, &bounds);
+
+            if let Some(i) = integer_but_real {
+                let (left_bounds, right_bounds) = bounds.split(i, values[i]);
+                for bound in [left_bounds, right_bounds].into_iter().flatten() {
+                    queue.push_back(bound);
+                }
+            }
+        }
+
         (lower, solver_calls)
     }
 }

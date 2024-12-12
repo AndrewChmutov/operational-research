@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::problem::{Bounds, ProblemIR};
-use crate::solver::node::{ByInterval, NoSort, NodeSearch, DFS};
+use crate::solver::node::{ByInterval, NoSort, NodeSearch, BFS, DFS};
 use crate::solver::variable::{ByConstraints, ByLength, ByValue, NoSearch, VariableSearch};
 
 struct Sample {
@@ -107,7 +107,7 @@ fn solve_lab_parametrized<N: NodeSearch, V: VariableSearch>(check: bool) -> (f64
 }
 
 fn solve_lab_default() -> (f64, u32) {
-    solve_lab_parametrized::<DFS<NoSort>, ByLength>(false)
+    solve_lab_parametrized::<BFS, ByLength>(false)
 }
 
 macro_rules! run_combinations_impl {
@@ -153,7 +153,7 @@ fn matrix() {
     // Compute
     let cross = run_combinations!(
         solve_lab_parametrized,
-        [DFS<NoSort>, DFS<ByInterval>],
+        [DFS<NoSort>, DFS<ByInterval>, BFS],
         [NoSearch, ByConstraints, ByLength, ByValue]
     );
 
