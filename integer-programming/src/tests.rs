@@ -165,18 +165,23 @@ fn matrix() {
             acc
         });
 
+    // Preserve order
+    let mut ordered_node_searches = result.keys().into_iter().collect::<Vec<_>>();
+    let mut ordered_variable_searches = result.values().next().unwrap().keys().collect::<Vec<_>>();
+    ordered_node_searches.sort();
+    ordered_variable_searches.sort();
+
     // Print
     print!(" {:<16} |", "");
-    for node_search in result.keys() {
+    for node_search in ordered_node_searches.iter() {
         print!(" {:<16} |", node_search)
     }
     println!();
 
-    let var_search = result.values().next().unwrap().keys().collect::<Vec<_>>();
-    for var_s in var_search {
+    for var_s in ordered_variable_searches.iter() {
         print!(" {:<16} |", var_s);
-        for node_search in result.keys() {
-            let (val, calls) = result[node_search][var_s];
+        for node_search in ordered_node_searches.iter() {
+            let (val, calls) = result[**node_search][**var_s];
             print!(" {:<16} |", format!("{val} / {calls}"))
         }
         println!();
